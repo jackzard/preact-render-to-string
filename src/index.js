@@ -33,7 +33,7 @@ let shallowRender = (vnode, context) => renderToString(vnode, context, SHALLOW);
 
 
 /** The default export is an alias of `render()`. */
-function renderToString(vnode, context, opts, inner, isSvgMode) {
+async function renderToString(vnode, context, opts, inner, isSvgMode) {
 	if (vnode==null || typeof vnode==='boolean') {
 		return '';
 	}
@@ -74,7 +74,10 @@ function renderToString(vnode, context, opts, inner, isSvgMode) {
 				c.props = props;
 				c.context = context;
 				if (nodeName.getDerivedStateFromProps) c.state = assign(assign({}, c.state), nodeName.getDerivedStateFromProps(c.props, c.state));
-				else if (c.componentWillMount) c.componentWillMount();
+				else if (c.componentWillMount) {
+					const temp = c.componentWillMount();
+					if (temp instanceof Promise) await Promise.resolve(temp);
+				}
 				rendered = c.render(c.props, c.state, c.context);
 
 				if (c.getChildContext) {
@@ -179,6 +182,7 @@ function renderToString(vnode, context, opts, inner, isSvgMode) {
 	}
 
 	if (pieces.length) {
+		pieces = await Promise.all(pieces);
 		s += pieces.join('');
 	}
 	else if (opts && opts.xml) {
